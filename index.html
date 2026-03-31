@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.3);
+            border-radius: 10px;
+        }
+        
+        #sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+
+        /* Message Bubble Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message-animate {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        /* Typing Indicator Animation */
+        .dot {
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            margin-right: 3px;
+            background: currentColor;
+            animation: wave 1.3s linear infinite;
+        }
+        .dot:nth-child(2) { animation-delay: -1.1s; }
+        .dot:nth-child(3) { animation-delay: -0.9s; }
+
+        @keyframes wave {
+            0%, 60%, 100% { transform: initial; }
+            30% { transform: translateY(-4px); }
+        }
+    </style>
+</head>
+<body class="bg-white dark:bg-[#212121] text-gray-900 dark:text-gray-100 h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-[#f9f9f9] dark:bg-[#171717] border-r border-gray-200 dark:border-white/10 transform -translate-x-full md:translate-x-0 md:relative flex flex-col">
+        <div class="p-4 flex items-center justify-between">
+            <button onclick="window.location.reload()" class="flex items-center gap-2 hover:bg-gray-200 dark:hover:bg-white/10 p-2 rounded-lg transition w-full">
+                <div class="w-8 h-8 bg-gray-300 dark:bg-white/20 rounded-full flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                </div>
+                <span class="font-medium">New Chat</span>
+            </button>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto custom-scrollbar px-2 space-y-1">
+            <div class="text-xs font-semibold text-gray-400 px-3 py-2 uppercase tracking-wider">Recent</div>
+            <a href="#" class="block px-3 py-2 text-sm rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 truncate">Dynamic Auto-Chat</a>
+        </nav>
+
+        <!-- Information & Profile Section -->
+        <div class="p-4 border-t border-gray-200 dark:border-white/10">
+            <div class="mb-4 px-2">
+                <p class="text-[10px] text-gray-400 dark:text-gray-500 font-semibold uppercase tracking-wider">
+                    Developed By Ozih Uddin Al Fuzayel
+                </p>
+            </div>
+            <button class="flex items-center gap-3 w-full p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-lg transition">
+                <div class="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center text-white text-xs font-bold">OU</div>
+                <div class="text-left">
+                    <p class="text-sm font-medium truncate">Ozih Uddin</p>
+                </div>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col relative min-w-0">
+        <!-- Header -->
+        <header class="h-14 flex items-center justify-between px-4 border-b border-gray-200 dark:border-white/10 md:border-none">
+            <button onclick="toggleSidebar()" class="md:hidden p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <div class="font-semibold text-lg flex items-center gap-1 cursor-default">
+                AI Assistant <span class="text-gray-400 font-normal tracking-tight">100 Replies Active</span>
+            </div>
+            <div class="w-8"></div>
+        </header>
+
+        <!-- Chat Area -->
+        <section id="chat-container" class="flex-1 overflow-y-auto custom-scrollbar flex flex-col items-center">
+            <!-- Welcome State -->
+            <div id="welcome-screen" class="w-full max-w-3xl px-4 py-8 space-y-12">
+                <div class="text-center pt-20">
+                    <h1 class="text-4xl font-semibold mb-8">What can I help with?</h1>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
+                        <button onclick="quickPrompt('Tell me a fun fact')" class="p-4 border border-gray-200 dark:border-white/10 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-white/5 transition">
+                            <p class="font-medium text-sm">Fun Facts</p>
+                            <p class="text-gray-400 text-xs mt-1">Surprise me with something interesting</p>
+                        </button>
+                        <button onclick="quickPrompt('Give me a productivity tip')" class="p-4 border border-gray-200 dark:border-white/10 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-white/5 transition">
+                            <p class="font-medium text-sm">Productivity</p>
+                            <p class="text-gray-400 text-xs mt-1">How can I manage my time better today?</p>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversation View -->
+            <div id="message-list" class="w-full max-w-3xl px-4 py-8 space-y-6 hidden">
+                <!-- Messages will appear here -->
+            </div>
+        </section>
+
+        <!-- Input Area -->
+        <footer class="p-4 pb-8 flex flex-col items-center">
+            <div class="w-full max-w-3xl relative">
+                <div class="bg-gray-100 dark:bg-[#303030] rounded-3xl p-3 shadow-sm border border-transparent focus-within:border-gray-300 dark:focus-within:border-white/20 transition-all">
+                    <textarea 
+                        id="user-input"
+                        rows="1" 
+                        placeholder="Message AI Assistant..." 
+                        class="w-full bg-transparent resize-none focus:outline-none px-2 py-1 max-h-48 custom-scrollbar"
+                    ></textarea>
+                    <div class="flex justify-between items-center mt-2 px-1">
+                        <button class="p-2 text-gray-500 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        </button>
+                        <button id="send-btn" class="p-2 bg-black dark:bg-white text-white dark:text-black rounded-full hover:opacity-80 transition disabled:opacity-30">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <p class="text-[10px] text-center text-gray-500 mt-3 uppercase tracking-widest font-medium">
+                    Developed By Ozih Uddin Al Fuzayel • AI can make mistakes.
+                </p>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const messageList = document.getElementById('message-list');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatContainer = document.getElementById('chat-container');
+
+        // 100 Auto-Replies
+        const autoReplies = [
+            "That's a fascinating perspective! Could you expand on that?",
+            "I'm currently analyzing your request to give you the most accurate response.",
+            "I see what you mean. It's a common challenge in this field.",
+            "Great question! Let's dive into the details of how that works.",
+            "I understand. Here is a creative way to approach that problem.",
+            "Interesting! Have you considered the long-term implications of that?",
+            "I'm here to help. Which specific aspect should we focus on first?",
+            "Got it. I'm gathering the necessary information for you right now.",
+            "That's a unique viewpoint. I'll include that in our analysis.",
+            "I'd be happy to assist with that. What's the next step you'd like to take?",
+            "That sounds like a solid plan. Would you like some feedback on it?",
+            "I've noted that. Is there anything else you'd like to add?",
+            "Excellent point. It's important to keep that in mind.",
+            "I'm on it! Let me find the best resources for you.",
+            "Interesting development. How does this change your current strategy?",
+            "I can certainly help with that. Let's start by defining our goals.",
+            "That's a valid concern. Let's look at some potential solutions.",
+            "I'm processing your input. Your patience is appreciated.",
+            "I see. That makes perfect sense given the context.",
+            "I'm ready when you are. What's the first thing on your mind?",
+            "That's a thought-provoking idea. Let's explore its feasibility.",
+            "I'm here to support your journey. What do you need most right now?",
+            "Understood. I'll make sure to prioritize that in our discussion.",
+            "That's a great observation. It's often overlooked.",
+            "I'm looking into it. I'll have an answer for you shortly.",
+            "I appreciate your input. It helps me provide better assistance.",
+            "That's a creative way to look at it. Let's see where it leads.",
+            "I'm here to listen and help. What's bothering you today?",
+            "Got it. I'll keep that in mind for our future interactions.",
+            "That's a significant point. Let's analyze it more deeply.",
+            "I'm happy to provide some guidance on that topic.",
+            "I understand your position. Let's see how we can move forward.",
+            "That's an insightful comment. It adds a lot to our conversation.",
+            "I'm here to brainstorm with you. Any other ideas?",
+            "I've got a few suggestions. Would you like to hear them?",
+            "That's a helpful piece of information. Thanks for sharing!",
+            "I'm processing your request. It won't be long now.",
+            "I see. That's a very clear way of putting it.",
+            "I'm here to assist you in any way I can.",
+            "That's a bold idea. Let's talk about the risks and rewards.",
+            "I'm on board with that. Let's start working on it.",
+            "I've taken note of your preference. Anything else?",
+            "That's a relevant point. It's crucial for our understanding.",
+            "I'm here to help you solve this. Let's break it down.",
+            "I understand the urgency. Let me see what I can do.",
+            "That's a well-reasoned argument. I'm impressed!",
+            "I'm processing your input. Let's see what the data says.",
+            "I see. That's a very interesting angle you've taken.",
+            "I'm here to provide some clarity on this matter.",
+            "That's a great starting point. Let's build on it.",
+            "I've got it. I'll incorporate that into our plan.",
+            "That's a valuable insight. It really clarifies things.",
+            "I'm here to help you succeed. What's your next move?",
+            "I understand perfectly. Let's move on to the next point.",
+            "That's a thought-provoking question. Let me think about it.",
+            "I'm here to support your creative process.",
+            "I've noted your feedback. It's very helpful.",
+            "That's a key detail. Let's make sure we don't miss it.",
+            "I'm here to help you navigate this complex issue.",
+            "I understand your perspective. Let's find a middle ground.",
+            "That's a sharp observation. You've got a keen eye!",
+            "I'm here to help you brainstorm some new ideas.",
+            "I've got a few thoughts on that. Shall I share them?",
+            "That's a helpful addition. It completes the picture.",
+            "I'm here to help you refine your ideas.",
+            "I understand. Let's keep the momentum going.",
+            "That's a great way to frame the problem.",
+            "I'm here to help you find the best path forward.",
+            "I've noted that. It's an important consideration.",
+            "That's an interesting approach. Let's test it out.",
+            "I'm here to help you achieve your goals.",
+            "I understand your concerns. Let's address them one by one.",
+            "That's a clever solution! I hadn't thought of that.",
+            "I'm here to help you stay on track.",
+            "I've got it. I'll make sure it's included in the report.",
+            "That's a relevant observation. It's very timely.",
+            "I'm here to help you make sense of all this data.",
+            "I understand. Let's focus on the most important tasks.",
+            "That's a great point. It really hits the nail on the head.",
+            "I'm here to help you explore some new possibilities.",
+            "I've noted your suggestion. It's worth considering.",
+            "That's a fascinating idea. Let's see where it takes us.",
+            "I'm here to help you overcome any obstacles.",
+            "I understand your goals. Let's work towards them together.",
+            "That's a solid piece of advice. I'll definitely use it.",
+            "I'm here to help you stay motivated.",
+            "I've got it. I'll update our project plan accordingly.",
+            "That's a key takeaway. Let's remember it for next time.",
+            "I'm here to help you broaden your horizons.",
+            "I understand. Let's take it one step at a time.",
+            "That's a brilliant insight! You've really outdone yourself.",
+            "I'm here to help you find your way.",
+            "I've noted that. It's a very important piece of the puzzle.",
+            "That's an intriguing question. Let's look for the answer.",
+            "I'm here to help you find the right balance.",
+            "I understand. Let's keep moving in the right direction.",
+            "That's a great example. it really illustrates your point.",
+            "I'm here to help you reach your full potential.",
+            "I've got it. I'll make sure everyone is on the same page.",
+            "That's a vital point. Let's give it the attention it deserves."
+        ];
+
+        let replyIndex = 0;
+        let isGenerating = false;
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('-translate-x-full');
+        }
+
+        function appendMessage(text, isUser = false, isTyping = false) {
+            if (welcomeScreen.style.display !== 'none') {
+                welcomeScreen.style.display = 'none';
+                messageList.classList.remove('hidden');
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'} w-full message-animate`;
+            if (isTyping) messageDiv.id = "typing-indicator";
+            
+            const innerDiv = document.createElement('div');
+            innerDiv.className = `max-w-[85%] p-4 rounded-2xl text-sm ${
+                isUser 
+                ? 'bg-gray-100 dark:bg-[#303030] text-gray-800 dark:text-gray-200' 
+                : 'bg-transparent text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-white/5 shadow-sm'
+            }`;
+            
+            if (isTyping) {
+                innerDiv.innerHTML = `<span class="dot"></span><span class="dot"></span><span class="dot"></span>`;
+            } else {
+                innerDiv.innerHTML = `<p class="leading-relaxed whitespace-pre-wrap">${text}</p>`;
+            }
+            
+            messageDiv.appendChild(innerDiv);
+            messageList.appendChild(messageDiv);
+            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+            return messageDiv;
+        }
+
+        async function handleSend() {
+            const text = userInput.value.trim();
+            if (!text || isGenerating) return;
+
+            isGenerating = true;
+            sendBtn.disabled = true;
+            appendMessage(text, true);
+            userInput.value = '';
+            userInput.style.height = 'auto';
+
+            const typingIndicator = appendMessage("", false, true);
+
+            // Simulate AI "Thinking" and return one of 100 replies
+            setTimeout(() => {
+                typingIndicator.remove();
+                const reply = autoReplies[replyIndex];
+                appendMessage(reply, false);
+                
+                // Cycle through 100 replies
+                replyIndex = (replyIndex + 1) % autoReplies.length;
+                
+                isGenerating = false;
+                sendBtn.disabled = false;
+            }, 1000);
+        }
+
+        function quickPrompt(text) {
+            userInput.value = text;
+            handleSend();
+        }
+
+        sendBtn.addEventListener('click', handleSend);
+        
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+            }
+        });
+
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        document.addEventListener('click', (e) => {
+            const sidebar = document.getElementById('sidebar');
+            const menuBtn = e.target.closest('button');
+            if (window.innerWidth < 768 && !sidebar.contains(e.target) && !menuBtn) {
+                sidebar.classList.add('-translate-x-full');
+            }
+        });
+    </script>
+</body>
+</html>
